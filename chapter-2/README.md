@@ -13,3 +13,45 @@ iex > b # 2
 iex > c # 3
 [3, 4, 5]
 ```
+
+If we didn't need to capture a value during the match, we can use the special variable `_` (underscore). This acts like a variable but immediately discards any value given to it - in a pattern match.
+```
+iex > [1, _, _] = [1, 2, 3]
+[1, 2, 3]
+iex > [1, _, _] = [1, "cat", "dog"]
+[1, "cat", "dog"]
+```
+
+Once a variable has been bound to a value in the matching process, it keeps that value for the remainder of the match
+```
+iex > [a, a] = [1, 1]
+[1, 1]
+iex > [b, b] = [1, 2]
+** (MatchError) no match of right hand side value: [1, 2]
+```
+
+A variable can be bound to a new value in a subsequent match, and its current value does not participate in the new match
+```
+iex > a = 1
+iex > [1, a, 3] = [1, 2, 3]
+iex > a
+2
+```
+
+If you want to force Elixir to use the existing value of the variable in the pattern, prefix it with `^` (caret). We call this *pin operator*
+```
+iex > a = 1
+1
+iex > a = 2
+2
+iex > ^a = 1
+** (MatchError) no match of right hand side value: 1
+```
+Also works if the variable is a component of a pattern:
+```
+iex > a = 1
+iex > [^a, 2, 3] = [1, 2, 3]
+iex > a = 2
+iex > [^a, 2] = [1, 2]
+** (MatchError) no match of right hand side value: [1, 2]
+```
