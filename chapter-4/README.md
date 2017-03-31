@@ -86,3 +86,106 @@ iex > Regex.replace(~r{[aeiou]}, "caterpillar", "*")
 These types reflect resources in the underlying Erlang VM.
 
 ### PIDs and Ports
+A `PID` is a reference to a local or remote process. The PID of the current process is available by calling `self`
+
+A `port` is a reference to a resource (typically external to the application) that you'll be reading or writing.
+
+### References
+The function `make_ref` creates a globally unique reference; no other reference will be equal to it.
+
+
+## Collection Types
+Elixir collections can hold values of any type (including other collections)
+
+### Tuples
+A **tuple** is an order collection of values. You write a tuple between braces, separating the elements with commas.
+```
+{1, 2} {:ok, 42, "next"} {:error, :enoent}
+```
+
+A typical Elixir tuplice has two to four elements - any more and you'll probably want to look at `maps` or `structs`.
+
+Use tuples in pattern matching:
+```
+iex > {status, count, action} = {:ok, 42, "next"}
+{:ok, 42, "next"}
+iex > status
+:ok
+iex > count
+42
+iex > action
+"next"
+```
+
+It is common for functions to return a tuple where the first element is the atom `:ok` if there were no errors.
+
+For example:
+```
+iex > # Assuming that we have a file called `mix.exs`
+iex > {status, file} = File.open("mix.exs")
+{:ok, #PID<0.39.0>}
+```
+
+### Lists
+Elixir `lists` are effectively a *linked data structure*. A list may either be empty or consist of a head and tail. The thead contains a value and tail is itself a list.
+
+Lists are easy to traverse linearly, but they are expensive to access in random order (think O(n), to get the n^th element, you have to scan through `n - 1` previous elements)
+
+It is always cheap to get the head of the list and to extract the tail of a list.
+
+Since lists are also immutable, if we want to remove the head from a list, leaving just the tail, we never have to copy the list. Instead we can return a pointer to the tail.
+
+Some operations on lists:
+```
+iex> [1, 2, 3] ++ [4, 5, 6] # concatenation
+[1, 2, 3, 4, 5, 6]
+iex > [1, 2, 3, 4] -- [2, 4] # difference
+[1, 3]
+iex > 1 in [1, 2, 3, 4] # membership
+true
+iex > "wombat" in [1, 2, 3, 4]
+false
+```
+
+#### Keyword Lists
+Is a simple list of key/value pairs. Elixir gives us a shortcut:
+`[name: "Dave", city: "Dallas", likes: "Programming"]`
+Elixir converts it into a list of two-value tuples, (effectively):
+`[{:name, "Dave"}, {:city, "Dallas"}, {:likes, "Programming"}]`
+
+Elixir allows us to leave off the square brackets if a keyword list is the last argument in a function call:
+```
+DB.save record, [{:use_transaction, true}, {:logging, "HIGH"}]
+# can be written as
+DB.save record, use_transaction: true, logging: "HIGH"
+```
+
+We can also leave off the brackets if a keyword list appears as the last item in any context where a list of values is expected:
+```
+iex > [1, fred: 1, dave: 2]
+[1, {:fred, 1}, {:dave, 2}]
+iex > {1, fred: 1, dave: 2}
+{1, [fred: 1, dave: 2]}
+```
+
+### Maps
+A `map` is a collection of key/value pairs. `%{key => value, key => value}`
+
+Examples of maps:
+```
+iex > states = %{ "AL" => "Alabama", "WI" => "Wisconsin"}
+iex > responses = %{{:error, :enoent} => :fatal, {:error, :busy} => :retry}
+iex > colors = %{red: 0xff0000, green: 0x00ff00, blue: 0x0000ff}
+```
+
+Typically all the keys in a map are the same type, but is not required.
+```
+iex > %{"one" => 1, :two => 2, {1, 1, 1} = 3}
+```
+
+You can also use expressions for keys in map literals:
+```
+iex > name = "Jose Valim"
+iex > %{String.downcase(name) => name}
+%{"jose valim" => "Jose Valime"}
+```
