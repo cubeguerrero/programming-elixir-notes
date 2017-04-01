@@ -189,3 +189,95 @@ iex > name = "Jose Valim"
 iex > %{String.downcase(name) => name}
 %{"jose valim" => "Jose Valime"}
 ```
+
+#### Maps vs Keyword Lists
+Maps allow only one entry for a particular key, whereas keyword lists allow the key to be repeated.
+Maps are efficient (particularly as they grow), and they can be used in Elixir's pattern matching.
+
+In general, use keywords lists for things such as command-line parameters and passing around options, and use maps when you want an associative array.
+
+#### Accessing a Map
+You extract values from a map using the key. The square-bracket syntax works with all maps:
+```
+iex > states = %{"AL" => "Alabama", "WI" => "Wisconsin"}
+iex > states["AL"]
+"Alabama"
+iex > states["TX"]
+nil
+```
+
+If the keys are atoms, you can also use a dot notation:
+```
+iex > colors = %{red: 0xff0000, green: 0x00ff00, blue: 0x0000ff}
+iex > colors[:red]
+iex > colors.green
+```
+
+You'll get a `KeyError` if there's no matching key when you use the dot notation.
+
+### Binaries
+Elixir alllows you to work with binary data type. Binary literals are enclosed between `<<` and `>>`.
+
+The basic syntax packs successive integers:
+```
+iex > bin = <<1, 2>>
+<<1, 2>>
+iex > byte_size bin
+2
+```
+
+You can add modifiers to control the type and size of each individual field.
+```
+iex > bin = <<3 :: size(2), 5 :: size(4), 1 :: size(2)>>
+<<213>>
+iex > :io.format("~-8.2b~n", :binary.bin_to_list(bin))
+11010101
+:ok
+iex > byte_size(bin)
+1
+```
+
+Binaries are important because Elixir uses them to represent UTF strings
+
+### Dates and Times
+Elixir (v 1.3) added a calendar module and four new date and time related types. But they are more like data holders -- look for third-party libraries to add functionality.
+
+The `Calendar` module represents the rules used to manipulate dates.
+
+The `Date` type holds a year, month, day, and a reference to the ruling calendar.
+```
+iex > d1 = Date.new(2016, 12, 25)
+{:ok, ~D[2016-12-25]}
+iex > {:ok, d1} = Date.new(2016, 12, 25)
+{:ok, ~D[2016-12-15]}
+iex > d2 = ~D[2016-12-15]
+iex > d1 == d2
+true
+```
+
+The `Time` type contains an hour, minute, second, and fractions of a second. The fraction is stored as a tuple containing microseconds and the number of significant digits.
+```
+iex > t1 = Time.new(12, 34, 56)
+{:ok, ~T[12:34:56]
+iex > t2 = ~T[12:34:56.78]
+~T[12:34:56.78]
+iex > t1 == t2
+false
+iex > inspect t2, structs: false
+"{:ok, %{__struct__: Time, hour: 12, microsecond: {780_000, 2}, minute: 34, second: 56}}
+```
+
+There are two date/time types, `DateTime` and `NaiveDateTime`. The naive version contains just a date and a time; `DateTime` adds the ability to associate a time zone. The `~N[...]` sigil construct `NaiveDateTime` structs.
+
+### Names, Source files, Conventions, Operators and So On
+Elixir identifiers consist of upper- and lowercase ASCII characters, digits, and underscores. They may end with a question or an exclamation mark.
+
+Module, record, protocol, and behavior names start with an uppercase letter and are BumpyCase.
+
+All other identifiers start with a lowercase letter or an underscore, and by convention use underscores between worrds. If the first character is an underscore, Elixir doesn't report a warning if the varible is unused in a pattern match or function parameter list.
+
+Source files are written in UFT-8, but identifies may use only ASCII.
+
+By convention, source files use two-character indentation for nesting, and the use spaces
+
+Comments start with a hash sign (`#`) and run to the end of the line.
