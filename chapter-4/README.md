@@ -103,7 +103,7 @@ A **tuple** is an order collection of values. You write a tuple between braces, 
 {1, 2} {:ok, 42, "next"} {:error, :enoent}
 ```
 
-A typical Elixir tuplice has two to four elements - any more and you'll probably want to look at `maps` or `structs`.
+A typical Elixir tuple has two to four elements - any more and you'll probably want to look at `maps` or `structs`.
 
 Use tuples in pattern matching:
 ```
@@ -283,7 +283,7 @@ By convention, source files use two-character indentation for nesting, and the u
 Comments start with a hash sign (`#`) and run to the end of the line.
 
 #### Truth
-Elixir has thre special values related to Boolean operations: `true`, `false` and `nil`. `nil` is treated as false in Boolean contexts
+Elixir has three special values related to Boolean operations: `true`, `false` and `nil`. `nil` is treated as false in Boolean contexts
 
 All three values are aliases for atoms of the same name.
 ```
