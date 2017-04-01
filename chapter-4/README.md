@@ -281,3 +281,152 @@ Source files are written in UFT-8, but identifies may use only ASCII.
 By convention, source files use two-character indentation for nesting, and the use spaces
 
 Comments start with a hash sign (`#`) and run to the end of the line.
+
+#### Truth
+Elixir has thre special values related to Boolean operations: `true`, `false` and `nil`. `nil` is treated as false in Boolean contexts
+
+All three values are aliases for atoms of the same name.
+```
+iex > :true
+true
+iex > :false
+false
+iex > :nil
+nil
+```
+
+#### Operators
+*Comparison Operators*
+```
+a === b # strict equality (1 === 1.0 is false)
+a !== b # strict inequality (1 !== 1.0 is true)
+a == b  # value equality (1 == 1.0 is true)
+a != b  # value inequality (1 != 1.0 is false)
+a > b
+a >= b
+a < b
+a <= b
+```
+
+if the types are the same or are compatible (for example, `3 > ` and `3.0 < 5`), the comparison uses natural ordering. Otherwise comaparison is based on type according to this rule
+
+`number < atom < reference < function < port < pid < tuple < map < list < binary`
+
+*Boolean operators*
+expects `true` or `false` as their first argument
+
+```
+a or b  # true if a is true, otherwise b
+a and b # false if a is false, otherwise b
+not a   # false if a is true, true otherwise
+```
+
+*Relaxed Boolean operators*
+takes arguments of any type. Any value apart from `nil` and `false` is interpreted as true
+```
+a || b # a if a is truthy, otherwise b
+a && b # b if a is truthy, otherwise a
+!a     # false if a is truth, otherwise true
+```
+
+*Arithmetic operators*
+`+ - * / div rem`
+
+Integer division yield floating point result. Use `div(a, b)` to get an intger
+```
+iex > 10 / 2
+5.0
+iex > div(10, 2)
+5
+```
+
+`rem` is the *remainder operator*. It is called as a function `rem(11, 3)`. It differs from normal modulo operations in that the result will have the same sign as the function's first argument
+
+*Join operators*
+```
+binary1 <> binary2 # concatenates two binaries (strings are also binaries)
+list1 ++ list2     # concatenates two lists
+list1 -- list2     # removes elements of list2 from a copy of list1
+```
+
+*The `in` operator*
+```
+a in enum  # tests if a is included in enum (i.e. list, range, or a map)
+           # For maps, a should be a {key, value} tuple
+```
+
+#### Variable Scope
+Elixir is lexically scoped. The basic unit of scoping is the function body. Variables defined in a function (including its parameters) are local to that function.
+
+Modules define a scope for local variables, but these are only accessible at the top level of that module, and not in functions defined in the module.
+
+#### The `with` Expression
+The `with` expression serves two purpose:
+1. it allows you to define a local scope for variables.
+2. it gives you some control over pattern matching failures.
+
+```
+content = "Now is the time"
+
+lp = with {:ok, file} = File.open("/etc/passwd"),
+          content     = IO.read(file, :all),
+          :ok         = File.close(file),
+          [_, uid, gid] = Regex.run(~r{_lp:.*?:(\d+):(\d+)}, content)
+     do
+          "Group: #{gid}, User: #{uid}"
+     end
+
+IO.puts lp      #=> Group: 26, User: 26
+IO.puts content #=> Now is the time
+```
+
+The `with` experssion let us work with what are effectively temporary variables. The value of the `with` expression is the value of its `do` parameter.
+
+#### `with` and Pattern Matching
+Using the `<-` operator instead of `=` in a `with` expression, it performs a match, but if if fails it returns the value that couldn't be matched.
+
+```
+iex > with [a | _] <- [1, 2, 3], do: a
+1
+iex > with [a | _] <- nil, do: a
+nil
+```
+
+##### A Minor Gotcha
+Underneath the covers, `with` is treated by Elixir as if it were a call to a funtion or macro.
+
+You cannot do this:
+```
+mean = with
+          count = Enum.count(values),
+          sum   = Enum.sum(values)
+       do
+          sum/count
+       end
+```
+
+Instead, align the first parameter to the `with` keyword
+```
+mean = with count = Enum.count(values),
+            sum   = Enum.sum(values)
+       do
+         sum/count
+       end
+```
+
+Or use parentheses
+```
+mean = with(
+        count = Enum.count(values),
+        sum   = Enum.sum(values)
+       do
+         sum/count
+       end)
+```
+
+You can also use the shortcut
+```
+mean = with count = Enum.count(values)
+            sum   = Enum.sum(values)
+       do: sum/count
+```
