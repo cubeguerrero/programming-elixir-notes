@@ -148,3 +148,135 @@ defmodule Params do
   end
 end
 ```
+
+## Private Functions
+`defp` macro defines a private function -- one that can only be called within the module that declares it.
+
+You can define private functions with multiple heads, but you cann have some heads private and others public.
+
+## The Amazing Pipe Operator: `|>`
+The `|>` operator takes the result of the expression to its left and inserts it as the first parameter of the function invocation to its right.
+
+You should always use parentheses around function parameters in pipelines.
+
+The key aspect of the pipe operator is that it lets you write code that pretty musch follow your specifications.
+
+- Get the customer list
+- Generate a list of their orders
+- Calculate tax on the orders
+- Prepare the filing
+
+Would be equivalent to:
+```
+DB.find_customers
+  |> Orders.for_customers
+  |> sales_tax(2016)
+  |> prepare_filing
+```
+
+## Modules
+Modules provide namespaces for things you define such as functions, macros, structs, protocols, and other module.
+
+To reference a function defined in a module (from outside that module), prefix the function call with the module's name
+
+```
+defmodule SomeModule do
+  def greet() do
+    "Hello World"
+  end
+end
+
+SomeModule.greet()
+```
+
+You can also created nested modules, to access a function in a nested module from the outside scope, prefix it with all the module names. To access it within the containing module, use either the fully qualified name or just the inner module name as a prefix.
+
+All modules are defined at the top level. Elixir simple prepends the oute, Elixir just r module name to the inner module name and putting a dot between the two.
+
+### Directive for Modules
+Elixir has three directives that simplify working with modules.
+
+1. `import`
+  Brings a module's functions and/or macros into the current scope. It can cut down the clutter in your source by eliminating the need to repeat the module name time and again.
+
+  The full syntax is
+  ```
+  import Module [, only: | except: ]
+  ```
+
+  The optional second paramters lets you control whcih functions or macros are imported. Write `only:` or `except:`, followed by a list of `name: arity` pairs
+
+  It is a good idea to use `import` in the smallest possible enclosing scope and to use `only:` to import just the functions you need.
+
+  You can also give `only:` the atoms `:functions` or `:macros` which will import only functions or macros, respectively.
+
+2. `alias`
+  The `alias` directive creates and alias for a module. Example
+  ```
+  defmodule Example do
+    alias Some.Other.ModuleName, as: ModuleName
+  end
+  ```
+
+  The `as:` parameter defaults to the last part of the module name. So we could have written it as
+  ```
+  defmodule Example do
+    alias Some.Other.ModuleName
+  end
+  ```
+
+  You can alias multiple modules (assuming the are part of the same namespace) by doing:
+  ```
+  alias Some.Other.{ AModule, BModule }
+  ```
+
+3. `require`
+  Use `require` if you want any macros defined in module. It ensures that the macro definitions are available when your code is compiled.
+
+All directives are **lexically scoped** -- it starts at the point of the directive is encountered, and stops at the end of the enclosing scope.
+
+## Module Attributes
+Elxir modules can have associated metadata called **attributes**. You can access these attributes by prefixing the name with an `@` sign. You give an attribute value using the syntax:
+```
+@name value
+```
+
+You can's set an attribute inside a function definition, but you can access attributes inside functions.
+
+You can set the same attribute multiple times in a module. The value you will see will be the value in effect when the function is defined.
+```
+defmodule Example
+  @attr "cube"
+  def func, do: @attr
+  @attr "cuthbert"
+  def func2, do: @attr
+end
+```
+
+Attributes are not variables! Use them for configuration and metadata only.
+
+## Module Names: Elixir, Erlang, and Atoms
+Internally, module names are just atoms. When you write anem starting with an uppercase, such as `IO`, Elixir converts it internally into an atom called `Elixir.IO`
+```
+iex > is_atom IO
+true
+iex > to_string IO
+"Elixir.IO"
+iex > :"Elixir.IO" === IO
+```
+
+## Calling a Function in an Erlang Library
+You can all Erlang modules, i.e. `timer` module in Erlang, in Elixir by writing it as `:timer`. if you want to refer a function within that Erlang module, you could write it as `:timer.function_name`.
+
+## Finding Libraries
+1. Built-in ones that are documented in the Elixir website.
+2. Libraries listed in (http://hex.pm)[http://hex.pm]
+3. Github **search for elixir**
+
+If that fails
+4. search for a built-in Erlang library
+5. or, if you find something written in Erlang, you'll be able to use it in your project.
+
+NOTE:
+Erlang libaries follow Erlang conventions, Variables start with uppercase latters, and identifiers starting with a lowercase letter are atoms.
+
