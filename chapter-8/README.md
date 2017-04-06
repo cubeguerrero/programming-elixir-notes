@@ -207,7 +207,7 @@ end
 Structs play a large role when implementing polymorphism.
 
 ## Nested Dictionary Structures
-Various dictionary tupes let us associate keys with values. But those values can themselves be dictionaries.
+Various dictionary types let us associate keys with values. But those values can themselves be dictionaries.
 ```
 defmodule Customer do
   defstruct name: "", company: ""
@@ -240,3 +240,170 @@ update_in(report.owner.name, &("Mr. " <> &1)) # => updates "Dave" to "Mr. Dave"
 ```
 
 The other two nested access functions are `get_in` and `get_and_update_in`.
+
+### Nested Accessors and Nonstructs
+You can supply the keys as atoms when using the nested accessor functions
+```
+iex > report = %{owner: %{name: "Dave", company: "Pragmatic"}, severity: 1}
+iex > put_in(report[:owner][:company], "PragProg")
+%{owner: %{name: "Dave", company: "PragProg"}, severity: 1}
+iex > update_in(report[:owner][:name], &("Mr. " + &1))
+%{owner: %{name: "Mr. Dave", company: "Pragmatic", severity: 1}
+```
+
+### Dynamic (Runtime) Nested Accessors
+The nested accessors used so far are **macros**, which means they operate at compile time. As a result, they have limitations:
+- The number of keys you pass a particular call is static
+- You can't pass the set of keys as parameters between functions
+
+To overcome these limitations, the functions `get_in`, `put_in`, `update_in`, and `get_and_update_in` can take a **list of keys as a separate parameter**. Changing them from macros to function calls, making them dynamic.
+
+| Function Name       | Macro         | Function             |
+| ------------------- | ------------- | -------------------- |
+| `get_in`            | No            | (dict, keys)         |
+| `put_in`            | (path, value) | (dict, keys, values) |
+| `updated_in`        | (path, fn)    | (dict, keys, fn)     |
+| `get_and_update_in` | (path, fn)    | (dict, keys, fn)     |
+
+Example:
+```
+nested = %{
+  buttercup: %{
+    actor: %{
+      first: "Robin",
+      last: "Wright",
+    },
+    role: "princess"
+  },
+  westley: %{
+    actor: %{
+      first: "Cary"
+      last: "Ewles" # typo
+    },
+    role: "farm boy"
+  }
+}
+
+get_in(nested, [:buttercup]) # => %{actor: ..., role: "princess"}
+get_in(nested, [:buttercup, :actor]) #=> %{first: "Robin", ...}
+get_in(nested, [:buttercup, :actor, :first]) #=> "Robin"
+put_in(nested, [:buttercup, :actor, :last], "Elwes")
+```
+
+The dynamic versions of `get_in` and `get_and_update_in` supports keys that are functions. They will invoke the function to return the corresponding values.
+```
+authors = [
+  %{name: "Jose", language: "Elixir"},
+  %{name: "Matz", language: "Ruby"},
+  %{name: "Larry", language: "Perl"}
+]
+
+languages_with_an_r = fn (:get, collection, next_fn) ->
+  for row <- collection do
+    if String.contains?(row.language, "r") do
+      next_fn.(row)
+    end
+  end
+end
+
+get_in(authors, [languages_with_an_r, :name]) #=> ["Jose", nil, "Larry"]
+```
+
+### The `Access` Module
+The `Access` module provides a number of predefined functions to use as paramters to `get_in` and `get_and_update_in`
+
+1. `Access.all`
+  - only works on lists
+  - returns all elements in the list
+  ```
+  cast = [
+    %{
+      character: "Buttercup",
+      actor: %{
+        first: "Robin",
+        last: "Wright"
+      },
+      role: "princess"
+    },
+    %{
+      character: "Westley",
+      actor: %{
+        first: "Cary",
+        last: "Elwes"
+      },
+      role: "farm boy"
+    }
+  ]
+
+  get_in(cast, [Access.all(), :character]) #=> ["Buttercup", "Westley"]
+  ```
+
+2. `Access.at`
+  - only works on lists
+  - returns the n<sup>th</sup> element (counting from zero)
+  ```
+  get_in(cast, [Access.at(1), :role]) #=> "farm boy"
+  ```
+
+3. `Access.elem`
+  - works on tuples
+  - returns the element of a tuple
+  - accepts an Integer
+  ```
+  cast = [
+    %{
+      character: "Buttercup"
+      actor: {"Robin", "Wright"},
+      role: "princess"
+    }
+  ]
+
+  get_in(cast, [Access.all(), :actory, Access.elem(1)]) #=> "Wright"
+  ```
+
+4. `Access.key` and `Access.key!`
+  - work on dictionary types (maps and structs)
+  - get the value base on the given key
+  ```
+  cast = %{
+    buttercup: %{
+      actor: {"Robin, "Wright"},
+      role: "princess"
+    },
+    westley: %{
+      actor: {"Carey", "Elwes"},
+      role: "farm boy"
+    }
+  }
+
+  get_in(cast, [Access.key(:westley), :actor, Access.elem(1)]) #=> "Elwes"
+  ```
+
+5. `Access.pop`
+  - lets you remove the entry with a given key from a map or keyword list.
+  - returns a tuple, where the first element is the value of the popped key and the second element is the updated container.
+  - has nothing to do with the `pop` stack operator.
+  ```
+  Access.pop(%{name: "Elixir", creator: "Valim"}, :name)
+  #=> {"Elixir", %{creator: "Valim"}}
+  Access.pop([name: "Elixir", creator: "Valim"], :name)
+  #=> {"Elixir", [creator: "Valim"]}
+  ```
+
+## Sets
+Sets are implemented using the module `MapSet`
+
+From https://hexdocs.pm/elixir/MapSet.html
+`MapSet` is the "go to" set data structure in Elixir. A **set** can contain any kind of elements and the elements don't have to be of the same type.
+
+By definition, sets can't contain duplicate elements, when inserting an element in a set where it's already present, the insertion is simply a no-op.
+
+```
+set1 = 1..5 |> Enum.into(MapSet.new)
+set2 = 3..8 |> Enum.into(MapSet.new)
+
+MapSet.member? set1, 3 #=> true
+MapSet.union set1, set2 #=> #MapSet<[1, 2, 3, 4, 5, 6, 7, 8]>
+MapSet.difference set1, set2 #=> #MapSet<[1, 2]>
+MapSet.intersection set1, set2 #=> #MapSet<[3, 4, 5]>
+```
