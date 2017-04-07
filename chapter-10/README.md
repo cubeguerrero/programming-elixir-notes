@@ -83,3 +83,72 @@ The `Enum` module can be used for the following:
 
 #### A Note on Sorting
 It's important to use `<=` not just `<` if you want the sort to be **stable**
+
+## Streams -- Lazy Enumerables
+The `Enum` module is **greedy**, which means that when you pass it a collection, it potentially consumes all the contents of that collection. It also means the result will typicall be another collection.
+
+## A `Stream` is a Composable Enumerator
+Stream process the elements of a collection as you need them, it passed the current element from function to function.
+
+Simple example of `Stream`
+```
+iex > s = Stream.map([1, 3, 5, 7], &(&1 + 1))
+#Stream<[enum: [1, 3, 5, 7], funs: [#Function<37.759945740/1 in Stream.map/2>]]>
+```
+
+To get the `Stream` to return results, pass it into one of the `Enum` modules functions
+```
+iex > Enum.to_list s #=> [2, 4, 6, 8]
+```
+
+Streams are `composable`, you can pass a stream into another stream
+```
+[1, 2, 3, 4]
+|> Stream.map(&(&1 * &1))
+|> Stream.map(&(&1 + 1))
+|> Stream.filter(fn x -> rem(x, 2) == 1 end)
+|> Enum.to_list
+```
+
+### Infinite Streams
+Because streams are lazy there's no need for the whole collection to be available.
+```
+iex > Enum.map(1..10_000_000, &(&1 + 1)) |> Enum.take(5) #=> will lag/make you wait before you get the result
+iex > Stream.map(1..10_000_000, &(&1 + 1)) |> Enum.take(5)
+```
+
+We can create a stream that can go on forever, by creating streams based on functions
+
+### Creating your own Streams
+We can use the following functions to create our own streams
+
+1. `Stream.cycle`
+  - takes an enumberable and returns an infinite stream containing that enumerable's elements. When it gets to the end, it repeats from the beginning, indefinitely.
+  ```
+  iex > Stream.cycle(~w{ red white }) |> Enum.zip(1..5)
+  [{"red", 1}, {"white", 2}, {"red", 3}, {"white", 4}, {"red", 5}]
+  ```
+
+2. `Stream.repeatedly`
+  - takes a function and invokes it each time a new value is wanted
+  ```
+  iex > Stream.repeatedly(fn -> true end) |> Enum.take(3)
+  [true, true, true]
+  ```
+
+3. `Stream.iterate`
+  - takes a starting value and a function. It generates an infinite stream by starting with the given starting value and generating the next one with the function
+  ```
+  iex > Stream.iterate(0, &(&1 + 1)) |> Enum.take(5)
+  [0, 1, 2, 3, 4]
+  ```
+
+4. `Stream.unfold`
+  - takes an initial value and a function, the functions uses the argument to create two values, returned as tuple. The first element of the tuple is the value to be returned by this iteration of the stream, and the second value is the value to be passed to the function on the next iteration of the stream.
+  - The generating function's form is `fn state -> { stream_value, new_state } end`
+  ```
+  iex > Stream.unfold({0, 1}, fn {f1, f2} -> {f1, {f2, f1 + f2}} end) |> Enum.take(5)
+  [0, 1, 1, 2, 3]
+  ```
+
+5. `Stream.resource`
