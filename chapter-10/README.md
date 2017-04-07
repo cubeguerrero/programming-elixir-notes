@@ -152,3 +152,82 @@ We can use the following functions to create our own streams
   ```
 
 5. `Stream.resource`
+  - takes 3 functions
+    1. `start_function` - A function that returns the value, it also takes no parameters
+    2. `next_function` - A function where you do stuff with the data you get from the first function, return value must be a tuple that contains a list of items to be emitted and the *next accumulator*
+    3. `after_function` - A function that takes the final accumulator value and does whatever is needed to deallocate the resource.
+  ```
+  Stream.resource(
+    fn -> File.open!("sample") end,
+    fn file ->
+      case IO.read(file, :line)
+        data when is_binary(data) -> {[data], file}
+        _ -> {:halt, file}
+      end
+    end,
+    fn file -> File.close(file) end
+  )
+  ```
+
+### Streams in Practice
+Consider using a stream when you want to defer processing until you need the data, and when you need to deal with large numbers of things without necessarily genearting them all at once.
+
+
+## The Collectable Protocol
+`Enumerable` protocol lets you iterate over the elements in a type -- given a collection, you can get the elements.
+
+`Collectable` allows you to build a collection by inserting elements into it.
+
+**Not all collections are collectable. Ranges cannot have new entries added to them.**
+
+Use the `Enum.into` function to access the `Collectable` API
+```
+iex > Enum.into 1..5, []
+[1, 2, 3, 4, 5]
+iex > Enum.into 1..5, [-1, 0]
+[-1, 0, 1, 2, 3, 4, 5]
+```
+Output streams are collectable
+```
+iex > Enum.into IO.stream(:stdio, :line), IO.stream(:stdio, :line)
+```
+
+## Comprehensions
+The idea of a **comprehension** is given one or more collections, extract all combinations of values from each, optionally filter the values, and then generate a new collection using the values that remain.
+
+The general syntax for comprehensions
+```
+result = for generator or filter... [, into: value] do: expression
+```
+
+```
+iex > for x <- [1, 2, 3, 4, 5], do: x * x
+iex > for x <- [1, 2, 3, 4, 5], x < 4, do: x * x #=> [1, 4, 9]
+```
+
+The **generator** specifies how you want to extract values from a collection. `pattern <- enumerable_thing`, any variables matched in the pattern are available in the rest of the comprehension.
+
+A **filter** is a predicate. It acts as a gatekeeper for the rest of the comprehension -- if the condition is fales, then the comprehension moves on to the next iteration without generating an output value.
+
+Because the first term in a generator is a pattern, we can use it to deconstruct structed data.
+
+```
+iex > reports [dallas: :hot, minneapolis: :cold, dc: :muggy, la: :smoggy]
+iex > for {city, temperature} <- reports, do: { temperature, city}
+```
+
+### Comprehensions Work on Bits, Too
+Enclose the generator in `<<` and `>>`, indicating a binary.
+```
+iex > for << ch <- "hello" >>, do: ch
+iex > for << ch <- "hello" >>, do: <<ch>>
+```
+
+### Scoping and Comprehensions
+All variable assignments inside a comprehension are local to that comprehension.
+
+### The Value Returned by a Comprehension
+Use the `into:` parameter to change the default behaviour of a comprehension (returning a list)
+```
+for x <- ~w{cat dot}, into: %{}, do: {x, String.upcase(x)}
+```
